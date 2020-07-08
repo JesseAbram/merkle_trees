@@ -1,28 +1,36 @@
 const ethers = require("ethers")
 
-const hash = async (leaf) => {
+const hash = (leaf) => {
     return ethers.utils.id(leaf)
 }
 
-const reduceMerkleBranches = async (leaves) => {
+const reduceMerkleBranches = (leaves, adjacentHash) => {
     let output = []
+    let nextHash
 
     while (leaves.length) {
         let left = leaves.shift()
         let right = (leaves.length === 0) ? left: leaves.shift();
-        output.push(await hash(left + right)) 
+        output.push(hash(left + right)) 
+        if (left === adjacentHash || right === adjacentHash) {
+            nextHash = hash(left + right)
+        }
     }
-    return output
+    return {nextLevel: output, returnedNextHash: nextHash}
 
 }
 
-const firstHashing = async (leaves) => {
+const firstHashing = (leaves) => {
     let hashedLeaves = []
+    let adjacentHash
         for(i=0; leaves.length > i; i++) {
-            const news = await hash(leaves[i])
-            hashedLeaves.push(news)
+            const hashedLeaf =  hash(leaves[i])
+            if (i === 1) {
+                adjacentHash = hashedLeaf
+            }
+            hashedLeaves.push(hashedLeaf)
         }
-        return hashedLeaves  
+        return {firstLevel: hashedLeaves, adjacentHash}  
 } 
 
 const powerOf2Check = (n) => {
@@ -32,21 +40,24 @@ const powerOf2Check = (n) => {
    }
 }
 
-const computeRoot = async () => {
+
+const computeRoot = () => {
     let root = []
+    let nextHash
     const leaves = ["hi", "test", "thing", "this"]
     powerOf2Check(leaves.length)
-    // if(leaves.length % 2 !== 0) {
-    //     throw new Error ("hey stop")
-    // }
-    const firstLevel = await firstHashing(leaves, true)
+   
+    const {firstLevel, adjacentHash} =  firstHashing(leaves)
     root.push(...firstLevel)
 
     while (root.length > 1) {
-        const nextLevel = await reduceMerkleBranches(root)
+        const {nextLevel, returnedNextHash} =  reduceMerkleBranches(root, adjacentHash)
+        if (returnedNextHash) {
+            nextHash = returnedNextHash
+        }
         root.push(...nextLevel)
     }
-
+    console.log("proof", {adjacentHash, nextHash})
     console.log({root})
 
 }
