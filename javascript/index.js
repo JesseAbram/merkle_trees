@@ -7,16 +7,18 @@ const hash = (leaf) => {
 const reduceMerkleBranches = (leaves, adjacentHash) => {
     let output = []
     let nextHash
-
+    let i =0
     while (leaves.length) {
+        i++
         let left = leaves.shift()
         let right = (leaves.length === 0) ? left: leaves.shift();
         output.push(hash(left + right)) 
-        if (left === adjacentHash || right === adjacentHash) {
-            nextHash = hash(left + right)
+        if (left !== adjacentHash || right !== adjacentHash) {
+            nextHash = i/2
         }
     }
-    return {nextLevel: output, returnedNextHash: nextHash}
+    console.log({output})
+    return {nextLevel: output, returnedNextHash: output[nextHash]}
 
 }
 
@@ -49,7 +51,7 @@ const computeRoot = () => {
    
     const {firstLevel, adjacentHash} =  firstHashing(leaves)
     root.push(...firstLevel)
-
+    console.log({firstLevel})
     while (root.length > 1) {
         const {nextLevel, returnedNextHash} =  reduceMerkleBranches(root, adjacentHash)
         if (returnedNextHash) {
@@ -57,7 +59,7 @@ const computeRoot = () => {
         }
         root.push(...nextLevel)
     }
-    console.log("proof", {adjacentHash, nextHash})
+    console.log("proof", {adjacentHash, nextHash, root: root[0], myWord: leaves[0]})
     console.log({root})
 
 }
