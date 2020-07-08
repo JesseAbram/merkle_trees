@@ -25,12 +25,20 @@ const firstHashing = async (leaves) => {
         return hashedLeaves  
 } 
 
+const powerOf2Check = (n) => {
+   const isPowerOf2 =  n && (n & (n - 1)) === 0
+   if (!isPowerOf2) {
+       throw new Error("hey wait no stop")
+   }
+}
+
 const computeRoot = async () => {
     let root = []
-    const leaves = ["hi", "test", "thing", "this", "whoa", "true"]
-    if(leaves.length % 2 !== 0) {
-        throw new Error ("hey stop")
-    }
+    const leaves = ["hi", "test", "thing", "this"]
+    powerOf2Check(leaves.length)
+    // if(leaves.length % 2 !== 0) {
+    //     throw new Error ("hey stop")
+    // }
     const firstLevel = await firstHashing(leaves, true)
     root.push(...firstLevel)
 
@@ -42,6 +50,7 @@ const computeRoot = async () => {
     console.log({root})
 
 }
+
 
 
 computeRoot()
