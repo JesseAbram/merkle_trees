@@ -17,17 +17,17 @@ const reduceMerkleBranches = (leaves, adjacentHash) => {
             nextHash = i/2
         }
     }
-    console.log({output})
     return {nextLevel: output, returnedNextHash: output[nextHash]}
 
 }
 
-const firstHashing = (leaves) => {
+const firstHashing = (leaves, leafIndex) => {
     let hashedLeaves = []
     let adjacentHash
+    const sisterHashPosition = leafIndex % 2 === 0 ? leafIndex + 1 : leafIndex - 1 
         for(i=0; leaves.length > i; i++) {
             const hashedLeaf =  hash(leaves[i])
-            if (i === 1) {
+            if (i === sisterHashPosition) {
                 adjacentHash = hashedLeaf
             }
             hashedLeaves.push(hashedLeaf)
@@ -46,12 +46,14 @@ const powerOf2Check = (n) => {
 const computeRoot = () => {
     let root = []
     let nextHash
+    const myWord = "test"
     const leaves = ["hi", "test", "thing", "this"]
+    const leafIndex = leaves.indexOf(myWord)
+
     powerOf2Check(leaves.length)
    
-    const {firstLevel, adjacentHash} =  firstHashing(leaves)
+    const {firstLevel, adjacentHash} =  firstHashing(leaves, leafIndex)
     root.push(...firstLevel)
-    console.log({firstLevel})
     while (root.length > 1) {
         const {nextLevel, returnedNextHash} =  reduceMerkleBranches(root, adjacentHash)
         if (returnedNextHash) {
@@ -59,7 +61,7 @@ const computeRoot = () => {
         }
         root.push(...nextLevel)
     }
-    console.log("proof", {adjacentHash, nextHash, root: root[0], myWord: leaves[0]})
+    console.log("proof", {adjacentHash, nextHash, root: root[0], myWord, leafIndex})
     console.log({root})
 
 }
