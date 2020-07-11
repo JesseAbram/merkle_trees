@@ -4,19 +4,20 @@ const hash = (leaf) => {
     return ethers.utils.id(leaf)
 }
 
-const reduceMerkleBranches = (leaves, adjacentHash) => {
+const reduceMerkleBranches = (leaves, hash1) => {
     let output = []
-    let nextHash
     let i =0
+    const adjacentHashIndex = leaves.indexOf(hash1)
+    console.log({leaves, hash1})
     while (leaves.length) {
         i++
         let left = leaves.shift()
         let right = (leaves.length === 0) ? left: leaves.shift();
         output.push(hash(left + right)) 
     }
-    //TODO return proper hash for proof (left or right)
-    console.log({output})
-    return {nextLevel: output, returnedNextHash: output[1]}
+    const nextLevelIndex = Math.floor(adjacentHashIndex / 2) 
+    let nextAdjacentHash = nextLevelIndex % 2 === 0 ?  output[nextLevelIndex + 1] : output[nextLevelIndex - 1]
+    return {nextLevel: output, returnedNextHash: nextAdjacentHash}
 
 }
 
