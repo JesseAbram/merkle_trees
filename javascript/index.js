@@ -46,8 +46,8 @@ const powerOf2Check = (n) => {
 const computeRoot = () => {
     let root = []
     let nextHash = []
-    const myWord = "test"
-    const leaves = ["hi", "test", "thing", "this", "his", "tests", "things", "thiss"]
+    const myWord = "and"
+    const leaves = ["like", "this", "that", "and", "this", "and", "that", "so", "just", "chill", "till", "the", "next", "episode", "one", "two"]
     const leafIndex = leaves.indexOf(myWord)
 
     powerOf2Check(leaves.length)
