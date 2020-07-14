@@ -1,20 +1,18 @@
-use std::iter::Map;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 fn main() {
-    let mut leaves = get_data();
+    let leaves = get_data();
     println!("{:?}", leaves);
     power_of_2_check(leaves.len());
-    let mut first_hashed_leaves = first_hashing(leaves);
+    let first_hashed_leaves = first_hashing(leaves);
     println!("{:?}", first_hashed_leaves);
 
 }
 
 fn first_hashing(leaves: Vec<String>) -> Vec<u64>{
     let mut hasher = DefaultHasher::new();
-    let mut hashed_leaves = Vec::new();
-    hashed_leaves = leaves.iter()
+    let hashed_leaves = leaves.iter()
                         .map(|x| {
                             x.hash(&mut hasher); 
                             hasher.finish()
