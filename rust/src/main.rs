@@ -1,12 +1,31 @@
+use std::iter::Map;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 fn main() {
     let mut leaves = get_data();
+    println!("{:?}", leaves);
     power_of_2_check(leaves.len());
-    println!("{:?}", leaves)
+    let mut first_hashed_leaves = first_hashing(leaves);
+    println!("{:?}", first_hashed_leaves);
+
+}
+
+fn first_hashing(leaves: Vec<String>) -> Vec<u64>{
+    let mut hasher = DefaultHasher::new();
+    let mut hashed_leaves = Vec::new();
+    hashed_leaves = leaves.iter()
+                        .map(|x| {
+                            x.hash(&mut hasher); 
+                            hasher.finish()
+                        })
+                                    .collect();
+    hashed_leaves
 }
 
 fn power_of_2_check(length: usize) {
  let is_power_of_2 = (length & (length - 1)) == 0;
-    if (!is_power_of_2) {
+    if !is_power_of_2 {
         panic!("hey wait no stop")
     }
 }
@@ -26,5 +45,12 @@ mod tests {
     #[test]
     fn it_passes_power_of_two() {
         power_of_2_check(16);
+    }
+
+    fn it_hashes_values() {
+        let test_data = vec!["like".into(), "this".into()];
+        let hashed_test_data = first_hashing(test_data);
+        let expected_result = vec![13469705049872891777, 2396052557377466138];
+        assert_eq!(expected_result, hashed_test_data);
     }
 }
