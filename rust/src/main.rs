@@ -22,6 +22,11 @@ fn first_hashing(leaves: Vec<String>) -> Vec<u64>{
 }
 
 fn power_of_2_check(length: usize) {
+    
+ if length == 0 {
+    panic!("hey wait no stop");
+ }
+
  let is_power_of_2 = (length & (length - 1)) == 0;
     match is_power_of_2 {
         true => (),
@@ -40,6 +45,11 @@ mod tests {
     #[should_panic(expected = "hey wait no stop")]
     fn it_fails_not_power_of_two() {
         power_of_2_check(15);
+    }
+    #[test]
+    #[should_panic(expected = "hey wait no stop")]
+    fn it_fails_if_0() {
+        power_of_2_check(0);
     }
     #[test]
     fn it_passes_power_of_two() {
