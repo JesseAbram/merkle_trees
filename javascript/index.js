@@ -8,7 +8,7 @@ const reduceMerkleBranches = (leaves, hash1) => {
     let output = []
     let i =0
     const adjacentHashIndex = leaves.indexOf(hash1)
-    console.log({leaves, hash1})
+    console.log({nodes: leaves})
     while (leaves.length) {
         i++
         let left = leaves.shift()
@@ -48,6 +48,7 @@ const computeRoot = () => {
     let nextHash = []
     const myWord = "and"
     const leaves = ["like", "this", "that", "and", "this", "and", "that", "so", "just", "chill", "till", "the", "next", "episode", "one", "two"]
+    console.log({leaves})
     const leafIndex = leaves.indexOf(myWord)
 
     powerOf2Check(leaves.length)
