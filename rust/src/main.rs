@@ -23,8 +23,9 @@ fn first_hashing(leaves: Vec<String>) -> Vec<u64>{
 
 fn power_of_2_check(length: usize) {
  let is_power_of_2 = (length & (length - 1)) == 0;
-    if !is_power_of_2 {
-        panic!("hey wait no stop")
+    match is_power_of_2 {
+        true => (),
+        false => panic!("hey wait no stop")
     }
 }
 fn get_data() ->  Vec<String> {
