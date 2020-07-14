@@ -45,7 +45,7 @@ mod tests {
     fn it_passes_power_of_two() {
         power_of_2_check(16);
     }
-
+    #[test]
     fn it_hashes_values() {
         let test_data = vec!["like".into(), "this".into()];
         let hashed_test_data = first_hashing(test_data);
