@@ -21,6 +21,8 @@ fn reduce_merkle_branches(nodes: Vec<u64>) -> Vec<u64> {
     let mut row = Vec::with_capacity((nodes.len() + 1) / 2);
     let mut i = 0;
     while i < nodes.len() {
+        // I am safe to assume even branches due to the power of two check but if I wanted to ease restrictions 
+        // I would if statment here if none nodes i + 1 and send through i twice (hash left twice)
         row.push(hash_nodes(nodes[i], nodes[i + 1]));
         i += 2;
     }
@@ -89,4 +91,18 @@ mod tests {
         let expected_result = vec![13469705049872891777, 2396052557377466138];
         assert_eq!(expected_result, hashed_test_data);
     }
+
+    #[test]
+    fn it_calculates_root() {
+        let expected_result = vec![16637296205013643304];
+        let first_hashed_leaves = first_hashing(get_data());
+        let mut root = Vec::new();
+        root = first_hashed_leaves;
+
+        while root.len() > 1 {
+            root = reduce_merkle_branches(root);
+        }
+        assert_eq!(root, expected_result)
+    }
+
 }
