@@ -5,13 +5,12 @@ fn main() {
     let leaves = get_data();
     println!("{:?}", leaves);
     power_of_2_check(leaves.len());
-    let first_hashed_leaves = first_hashing(leaves, 0);
+    let proof_index = 0;
+    let first_hashed_leaves = first_hashing(leaves, proof_index);
     println!("{:?}", first_hashed_leaves.hashed_leaves);
     println!("{:?}", first_hashed_leaves.sister_hash);
 
-    // let mut root = [];
-    let mut root = Vec::new();
-    root = first_hashed_leaves.hashed_leaves;
+    let mut root = first_hashed_leaves.hashed_leaves;
     while root.len() > 1 {
         root = reduce_merkle_branches(root);
     }
@@ -40,13 +39,13 @@ fn hash_nodes(left: u64, right: u64) -> u64 {
     hasher.finish()
 
 }
-struct first_hash_return {
+struct FirstHashReturn {
     hashed_leaves: Vec<u64>,
     sister_hash: u64
 
 }
 
-fn first_hashing(leaves: Vec<String>, index: usize) -> first_hash_return {
+fn first_hashing(leaves: Vec<String>, index: usize) -> FirstHashReturn {
     let mut hasher = DefaultHasher::new();
     let mut hashed_leaves = Vec::new();
     hashed_leaves = leaves.iter()
@@ -56,7 +55,7 @@ fn first_hashing(leaves: Vec<String>, index: usize) -> first_hash_return {
                         })
                                     .collect();
     let sister_hash = if index % 2 == 0 {hashed_leaves[index + 1]} else {hashed_leaves[index - 1]};
-    let return_data = first_hash_return {
+    let return_data = FirstHashReturn {
         sister_hash, 
         hashed_leaves
     };
@@ -105,14 +104,14 @@ mod tests {
         let hashed_test_data = first_hashing(test_data, 0);
         let expected_result = vec![13469705049872891777, 2396052557377466138];
         assert_eq!(expected_result, hashed_test_data.hashed_leaves);
+        assert_eq!(expected_result[1], hashed_test_data.sister_hash);
     }
 
     #[test]
     fn it_calculates_root() {
         let expected_result = vec![16637296205013643304];
         let first_hashed_leaves = first_hashing(get_data(), 0);
-        let mut root = Vec::new();
-        root = first_hashed_leaves.hashed_leaves;
+        let mut root = first_hashed_leaves.hashed_leaves;
 
         while root.len() > 1 {
             root = reduce_merkle_branches(root);
