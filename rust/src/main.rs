@@ -7,6 +7,33 @@ fn main() {
     power_of_2_check(leaves.len());
     let first_hashed_leaves = first_hashing(leaves);
     println!("{:?}", first_hashed_leaves);
+    // let mut root = [];
+    let mut root = Vec::new();
+    root = first_hashed_leaves;
+    while root.len() > 1 {
+        root = reduce_merkle_branches(root);
+    }
+    println!("I am root {:?}", root);
+
+}
+
+fn reduce_merkle_branches(nodes: Vec<u64>) -> Vec<u64> {
+    let mut row = Vec::with_capacity((nodes.len() + 1) / 2);
+    let mut i = 0;
+    while i < nodes.len() {
+        row.push(hash_nodes(nodes[i], nodes[i + 1]));
+        i += 2;
+    }
+    println!("{:?}", row);
+
+    row
+}
+
+fn hash_nodes(left: u64, right: u64) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    let concat = left.wrapping_add(right);
+    concat.hash(&mut hasher);
+    hasher.finish()
 
 }
 
@@ -22,7 +49,7 @@ fn first_hashing(leaves: Vec<String>) -> Vec<u64>{
 }
 
 fn power_of_2_check(length: usize) {
-    
+
  if length == 0 {
     panic!("hey wait no stop");
  }
