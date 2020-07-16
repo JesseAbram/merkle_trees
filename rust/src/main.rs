@@ -9,16 +9,29 @@ fn main() {
     let first_hashed_leaves = first_hashing(leaves, proof_index);
     println!("{:?}", first_hashed_leaves.hashed_leaves);
     println!("{:?}", first_hashed_leaves.sister_hash);
-
-    let mut root = first_hashed_leaves.hashed_leaves;
+    // let mut nextHash = 
+    let mut root = first_hashed_leaves.hashed_leaves.clone();
+    let mut proof = Vec::new();
+    proof.push(first_hashed_leaves.sister_hash);
+    let mut adjacentHash = first_hashed_leaves.sister_hash.clone();
     while root.len() > 1 {
-        root = reduce_merkle_branches(root);
+        let return_data = reduce_merkle_branches(root, adjacentHash);
+        root = return_data.row;
+        adjacentHash = return_data.adjacentHash;
+        proof.push(return_data.adjacentHash)
     }
+    // TODO deal with leaves borrow checker better
+    println!("proof {:?}, leaf_index {}, my_word {}", proof, proof_index, get_data()[proof_index]);
     println!("I am root {:?}", root);
 
 }
 
-fn reduce_merkle_branches(nodes: Vec<u64>) -> Vec<u64> {
+struct MerkleBranchReturn {
+    row: Vec<u64>,
+    adjacentHash: u64
+}
+
+fn reduce_merkle_branches(nodes: Vec<u64>, adjacentHash: u64) -> MerkleBranchReturn {
     let mut row = Vec::with_capacity((nodes.len() + 1) / 2);
     let mut i = 0;
     while i < nodes.len() {
@@ -27,9 +40,22 @@ fn reduce_merkle_branches(nodes: Vec<u64>) -> Vec<u64> {
         row.push(hash_nodes(nodes[i], nodes[i + 1]));
         i += 2;
     }
+    let adjacent_hash_index = nodes.iter().position(|&r| r == adjacentHash).unwrap();
+    let next_index_level = adjacent_hash_index / 2;
+    println!("index positio {}", adjacent_hash_index);
+    println!("next_index_level positio {}", next_index_level);
+    if row.len() < 2 {
+        return MerkleBranchReturn {
+            adjacentHash: row[0],
+            row
+        }
+    }
+    let sister_hash = if next_index_level % 2 == 0 {row[next_index_level + 1]} else {row[next_index_level - 1]};
     println!("{:?}", row);
-
-    row
+    MerkleBranchReturn {
+        row, 
+        adjacentHash: sister_hash
+    }
 }
 
 fn hash_nodes(left: u64, right: u64) -> u64 {
@@ -112,9 +138,12 @@ mod tests {
         let expected_result = vec![16637296205013643304];
         let first_hashed_leaves = first_hashing(get_data(), 0);
         let mut root = first_hashed_leaves.hashed_leaves;
+        let mut adjacentHash;
 
         while root.len() > 1 {
-            root = reduce_merkle_branches(root);
+            let return_data = reduce_merkle_branches(root, first_hashed_leaves.sister_hash);
+            root = return_data.row;
+            adjacentHash = return_data.adjacentHash;
         }
         assert_eq!(root, expected_result)
     }
