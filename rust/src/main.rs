@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 fn main() {
     let leaves = get_data();
     // println!("{:?}", leaves);
-    let proof_index = 2;
+    let proof_index = 0;
     let myWord = leaves[proof_index].clone();
     power_of_2_check(leaves.len());
     let first_hashed_leaves = first_hashing(&leaves, &proof_index);
@@ -23,7 +23,7 @@ fn main() {
     }
     // TODO deal with leaves borrow checker better
     // TODO put full proof into struct
-    let isProved = check_proof(&proof, &proof_index, first_hashed_leaves.hashed_leaves[proof_index]);
+    let isProved = check_proof(&proof, &proof_index, &leaves[proof_index]);
 
     println!("proof {:?}, leaf_index {}, my_word {}", &proof, &proof_index, leaves[proof_index]);
     // println!("I am root {:?}", root);
@@ -78,10 +78,10 @@ struct FirstHashReturn {
 }
 
 fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
-    let mut hasher = DefaultHasher::new();
     let mut hashed_leaves = Vec::new();
     hashed_leaves = leaves.iter()
                         .map(|x| {
+                            let mut hasher = DefaultHasher::new();
                             x.hash(&mut hasher); 
                             hasher.finish()
                         })
@@ -96,10 +96,11 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
     return_data
 }
 
-fn check_proof(nodes: &Vec<u64>, index: &usize, word: u64) -> bool { 
+fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool { 
+    //TODO fix first hashing does not resolve to same hash
     let mut hasher = DefaultHasher::new();
     word.hash(&mut hasher); 
-    let hashed_word = word;//hasher.finish();
+    let hashed_word = hasher.finish();
     println!("hashed_word {:?}", word);
     println!("hashed_word {:?}", hashed_word);
 
