@@ -3,14 +3,15 @@ use std::hash::{Hash, Hasher};
 
 fn main() {
     let leaves = get_data();
-    println!("{:?}", leaves);
+    // println!("{:?}", leaves);
+    let proof_index = 2;
+    let myWord = leaves[proof_index].clone();
     power_of_2_check(leaves.len());
-    let proof_index = 0;
     let first_hashed_leaves = first_hashing(&leaves, &proof_index);
     println!("{:?}", first_hashed_leaves.hashed_leaves);
     println!("{:?}", first_hashed_leaves.sister_hash);
     // let mut nextHash = 
-    let mut root = first_hashed_leaves.hashed_leaves;
+    let mut root = first_hashed_leaves.hashed_leaves.clone();
     let mut proof = Vec::new();
     proof.push(first_hashed_leaves.sister_hash);
     let mut adjacentHash = first_hashed_leaves.sister_hash;
@@ -22,10 +23,10 @@ fn main() {
     }
     // TODO deal with leaves borrow checker better
     // TODO put full proof into struct
-    let isProved = check_proof(&proof, &proof_index, &leaves[proof_index]);
+    let isProved = check_proof(&proof, &proof_index, first_hashed_leaves.hashed_leaves[proof_index]);
 
     println!("proof {:?}, leaf_index {}, my_word {}", &proof, &proof_index, leaves[proof_index]);
-    println!("I am root {:?}", root);
+    // println!("I am root {:?}", root);
     println!("is proved? {:?}", isProved);
 
 
@@ -47,8 +48,8 @@ fn reduce_merkle_branches(nodes: Vec<u64>, adjacentHash: u64) -> MerkleBranchRet
     }
     let adjacent_hash_index = nodes.iter().position(|&r| r == adjacentHash).unwrap();
     let next_index_level = adjacent_hash_index / 2;
-    println!("index positio {}", adjacent_hash_index);
-    println!("next_index_level positio {}", next_index_level);
+    // println!("index positio {}", adjacent_hash_index);
+    // println!("next_index_level positio {}", next_index_level);
     if row.len() < 2 {
         return MerkleBranchReturn {
             adjacentHash: row[0],
@@ -95,10 +96,13 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
     return_data
 }
 
-fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool { 
+fn check_proof(nodes: &Vec<u64>, index: &usize, word: u64) -> bool { 
     let mut hasher = DefaultHasher::new();
     word.hash(&mut hasher); 
-    let hashed_word = hasher.finish();
+    let hashed_word = word;//hasher.finish();
+    println!("hashed_word {:?}", word);
+    println!("hashed_word {:?}", hashed_word);
+
     let first_level = if index % 2 == 0 {hash_function(hashed_word.wrapping_add(nodes[0]))} else {hash_function(nodes[0].wrapping_add(hashed_word))};
     println!("first_level {:?}", first_level);
 
