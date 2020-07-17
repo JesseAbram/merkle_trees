@@ -93,8 +93,30 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
 }
 
 fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) { 
+    let mut hasher = DefaultHasher::new();
+    word.hash(&mut hasher); 
+    let hashed_word = hasher.finish();
+    let first_level = if index % 2 == 0 {hash_function(hashed_word.wrapping_add(nodes[0]))} else {hash_function(nodes[0].wrapping_add(hashed_word))};
+    println!("first_level {:?}", first_level);
 
+    let mut i = 1;
+    let mut current_hash = first_level;
+    while i  < nodes.len() - 1 {
+        current_hash = (reduce_proof(nodes[i], current_hash, index, i));
+        println!("current_hash {}", current_hash);
+        i += 1; 
+    }
+}
 
+fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: &usize, i: usize) -> u64{
+    let new_position = (leaf_index / i + 2);
+    if new_position % 2 == 0 {hash_function(current_hash.wrapping_add(next_hash))} else {hash_function(next_hash.wrapping_add(current_hash))}
+}
+
+fn hash_function(data: u64) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    data.hash(&mut hasher); 
+    hasher.finish()
 }
 
 fn power_of_2_check(length: usize) {
