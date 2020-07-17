@@ -22,9 +22,12 @@ fn main() {
     }
     // TODO deal with leaves borrow checker better
     // TODO put full proof into struct
-    check_proof(&proof, &proof_index, &leaves[proof_index]);
+    let isProved = check_proof(&proof, &proof_index, &leaves[proof_index]);
+
     println!("proof {:?}, leaf_index {}, my_word {}", &proof, &proof_index, leaves[proof_index]);
     println!("I am root {:?}", root);
+    println!("is proved? {:?}", isProved);
+
 
 }
 
@@ -92,7 +95,7 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
     return_data
 }
 
-fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) { 
+fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool { 
     let mut hasher = DefaultHasher::new();
     word.hash(&mut hasher); 
     let hashed_word = hasher.finish();
@@ -106,6 +109,7 @@ fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) {
         println!("current_hash {}", current_hash);
         i += 1; 
     }
+    current_hash == nodes[nodes.len() - 1]
 }
 
 fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: &usize, i: usize) -> u64{
