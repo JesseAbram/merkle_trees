@@ -3,14 +3,10 @@ use std::hash::{Hash, Hasher};
 
 fn main() {
     let leaves = get_data();
-    // println!("{:?}", leaves);
     let proof_index = 0;
-    // let _my_word = leaves[proof_index].clone();
-    power_of_2_check(leaves.len());
     let first_hashed_leaves = first_hashing(&leaves, &proof_index);
     println!("{:?}", first_hashed_leaves.hashed_leaves);
     println!("{:?}", first_hashed_leaves.sister_hash);
-    // let mut nextHash = 
     let mut root = first_hashed_leaves.hashed_leaves.clone();
     let mut proof = Vec::new();
     proof.push(first_hashed_leaves.sister_hash);
@@ -21,12 +17,11 @@ fn main() {
         adjacent_hash = return_data.adjacent_hash;
         proof.push(return_data.adjacent_hash)
     }
-    // TODO deal with leaves borrow checker better
     // TODO put full proof into struct
     let is_proved = check_proof(&proof, &proof_index, &leaves[proof_index]);
 
     println!("proof {:?}, leaf_index {}, my_word {}", &proof, &proof_index, leaves[proof_index]);
-    // println!("I am root {:?}", root);
+    println!("I am root {:?}", root);
     println!("is proved? {:?}", is_proved);
 
 
@@ -41,15 +36,16 @@ fn reduce_merkle_branches(nodes: Vec<u64>, adjacent_hash: u64) -> MerkleBranchRe
     let mut row = Vec::with_capacity((nodes.len() + 1) / 2);
     let mut i = 0;
     while i < nodes.len() {
-        // I am safe to assume even branches due to the power of two check but if I wanted to ease restrictions 
-        // I would if statment here if none nodes i + 1 and send through i twice (hash left twice)
+    if nodes.len() - row.len() * 2 != 1 {
         row.push(hash_nodes(nodes[i], nodes[i + 1]));
-        i += 2;
+    } else {
+        row.push(hash_nodes(nodes[i], nodes[i]));
+    }
+    i += 2; 
+
     }
     let adjacent_hash_index = nodes.iter().position(|&r| r == adjacent_hash).unwrap();
     let next_index_level = adjacent_hash_index / 2;
-    // println!("index positio {}", adjacent_hash_index);
-    // println!("next_index_level positio {}", next_index_level);
     if row.len() < 2 {
         return MerkleBranchReturn {
             adjacent_hash: row[0],
@@ -96,21 +92,18 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
 }
 
 fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool { 
-    //TODO fix first hashing does not resolve to same hash
     let mut hasher = DefaultHasher::new();
     word.hash(&mut hasher); 
     let hashed_word = hasher.finish();
-    println!("hashed_word {:?}", word);
-    println!("hashed_word {:?}", hashed_word);
 
+    // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
     let first_level = if index % 2 == 0 {hash_function(hashed_word.wrapping_add(nodes[0]))} else {hash_function(nodes[0].wrapping_add(hashed_word))};
-    println!("first_level {:?}", first_level);
 
     let mut i = 1;
     let mut current_hash = first_level;
     while i  < nodes.len() - 1 {
         current_hash = reduce_proof(nodes[i], current_hash, index, i);
-        println!("current_hash {}", current_hash);
+        // println!("current_hash {}", current_hash);
         i += 1; 
     }
     current_hash == nodes[nodes.len() - 1]
@@ -127,18 +120,18 @@ fn hash_function(data: u64) -> u64 {
     hasher.finish()
 }
 
-fn power_of_2_check(length: usize) {
+// fn power_of_2_check(length: usize) {
 
- if length == 0 {
-    panic!("hey wait no stop");
- }
+//  if length == 0 {
+//     panic!("hey wait no stop");
+//  }
 
- let is_power_of_2 = (length & (length - 1)) == 0;
-    match is_power_of_2 {
-        true => (),
-        false => panic!("hey wait no stop")
-    }
-}
+//  let is_power_of_2 = (length & (length - 1)) == 0;
+//     match is_power_of_2 {
+//         true => (),
+//         false => panic!("hey wait no stop")
+//     }
+// }
 fn get_data() ->  Vec<String> {
     vec!["like".into(), "this".into(), "that".into(), "and".into(), "this".into(), "and".into(), "that".into(), "so".into(), "just".into(), "chill".into(), "till".into(), "the".into(), "next".into(), "episode".into(), "one".into(), "two".into()]
 }
@@ -147,20 +140,20 @@ fn get_data() ->  Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    #[should_panic(expected = "hey wait no stop")]
-    fn it_fails_not_power_of_two() {
-        power_of_2_check(15);
-    }
-    #[test]
-    #[should_panic(expected = "hey wait no stop")]
-    fn it_fails_if_0() {
-        power_of_2_check(0);
-    }
-    #[test]
-    fn it_passes_power_of_two() {
-        power_of_2_check(16);
-    }
+    // #[test]
+    // #[should_panic(expected = "hey wait no stop")]
+    // fn it_fails_not_power_of_two() {
+    //     power_of_2_check(15);
+    // }
+    // #[test]
+    // #[should_panic(expected = "hey wait no stop")]
+    // fn it_fails_if_0() {
+    //     power_of_2_check(0);
+    // }
+    // #[test]
+    // fn it_passes_power_of_two() {
+    //     power_of_2_check(16);
+    // }
     #[test]
     fn it_hashes_values() {
         let test_data = vec!["like".into(), "this".into()];
@@ -216,6 +209,28 @@ mod tests {
         let my_word = "like".to_string();
         let is_correct = check_proof(&proof, &proof_index, &my_word);
         assert_eq!(is_correct, false);
+    }
+    #[test]
+    fn it_calculates_root_for_non_power_of_two_tree() {
+       let data = vec!["like".into(), "this".into(), "that".into(), "and".into(), "this".into(), "and".into(), "that".into(), "so".into(), "just".into(), "chill".into(), "till".into(), "the".into(), "next".into(), "episode".into(), "one".into()];
+       let expected_result = vec![17278646585610960701];
+       let first_hashed_leaves = first_hashing(&data, &0);
+       let mut root = first_hashed_leaves.hashed_leaves;
+       let mut adjacent_hash = first_hashed_leaves.sister_hash;
+       while root.len() > 1 {
+           let return_data = reduce_merkle_branches(root, adjacent_hash);
+           root = return_data.row;
+           adjacent_hash = return_data.adjacent_hash;
+       }
+       assert_eq!(root, expected_result)
+    }
+    #[test]
+    fn it_calculates_correct_proof_to_with_uneven_leaves() {    
+        let proof = [13421249885991295001, 9426091635773224930, 16995962029822891419, 2239737509107465412, 17278646585610960701].to_vec();
+        let proof_index = 0; 
+        let my_word = "like".to_string();
+        let is_correct = check_proof(&proof, &proof_index, &my_word);
+        assert_eq!(is_correct, true);
     }
 
 }
