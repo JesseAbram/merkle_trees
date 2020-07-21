@@ -111,6 +111,7 @@ fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
 
 fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: &usize, i: usize) -> u64{
     let new_position = leaf_index / i + 2;
+    // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
     if new_position % 2 == 0 {hash_function(current_hash.wrapping_add(next_hash))} else {hash_function(next_hash.wrapping_add(current_hash))}
 }
 
