@@ -184,4 +184,38 @@ mod tests {
         assert_eq!(root, expected_result)
     }
 
+    #[test]
+    fn it_hashes_nodes_correctly() {
+        let expected_result = 11396221907974800208;
+        let left = 13469705049872891777;
+        let right = 13421249885991295001;
+        let hashed_node = hash_nodes(left, right);
+        assert_eq!(hashed_node, expected_result);
+    }
+
+    #[test]
+    fn it_calculates_correct_proof_to_true() {    
+        let proof = [13421249885991295001, 9426091635773224930, 16995962029822891419, 14703833076160150437, 8215901497871711904].to_vec();
+        let proof_index = 0; 
+        let my_word = "like".to_string();
+        let is_correct = check_proof(&proof, &proof_index, &my_word);
+        assert_eq!(is_correct, true);
+    }
+    #[test]
+    fn it_calculates_incorrect_proof_to_false_with_wrong_word() {
+        let proof = [13421249885991295001, 9426091635773224930, 16995962029822891419, 14703833076160150437, 8215901497871711904].to_vec();
+        let proof_index = 0; 
+        let my_word = "this".to_string();
+        let is_correct = check_proof(&proof, &proof_index, &my_word);
+        assert_eq!(is_correct, false);
+    }
+    #[test]
+    fn it_calculates_incorrect_proof_to_false_with_wrong_proof() {
+        let proof = [13421249885991295101, 9426091635773224930, 16995962029822891419, 14703833076160150437, 8215901497871711904].to_vec();
+        let proof_index = 0; 
+        let my_word = "like".to_string();
+        let is_correct = check_proof(&proof, &proof_index, &my_word);
+        assert_eq!(is_correct, false);
+    }
+
 }
