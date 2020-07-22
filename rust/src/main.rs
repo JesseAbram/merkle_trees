@@ -3,10 +3,8 @@ use std::hash::{Hash, Hasher};
 
 fn main() {
     let leaves = get_data();
-    let proof_index = 7;
+    let proof_index = 0;
     let first_hashed_leaves = first_hashing(&leaves, &proof_index);
-    println!("{:?}", first_hashed_leaves.hashed_leaves);
-    println!("{:?}", first_hashed_leaves.adjacent_hash);
     let mut root = first_hashed_leaves.hashed_leaves.clone();
     let mut proof = Vec::new();
     proof.push(first_hashed_leaves.adjacent_hash);
@@ -68,7 +66,6 @@ fn reduce_merkle_branches(nodes: Vec<u64>, current_adjacent_hash: u64) -> Merkle
     } else {
         row[next_index_level - 1]
     };
-    println!("{:?}", row);
     MerkleBranchReturn { row, adjacent_hash }
 }
 /// hashes a left and right node together returns hash
@@ -87,11 +84,15 @@ struct FirstHashReturn {
 /// returns the hashes of all the input data and the adjacent hash of the leaf to prove
 fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
     let mut hashed_leaves = Vec::new();
+    let mut i = 0;
+    // hashes all the leaves, appends an index to force unique hash (almost like a nonce)
     hashed_leaves = leaves
         .iter()
         .map(|x| {
+            let unique_word = x.clone() + (&i.to_string());
             let mut hasher = DefaultHasher::new();
-            x.hash(&mut hasher);
+            unique_word.hash(&mut hasher);
+            i += 1;
             hasher.finish()
         })
         .collect();
@@ -111,7 +112,8 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
 fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
     // hash the piece of data to be checked
     let mut hasher = DefaultHasher::new();
-    word.hash(&mut hasher);
+    let unique_word = word.clone() + &index.to_string();
+    unique_word.hash(&mut hasher);
     let hashed_word = hasher.finish();
 
     // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
@@ -130,13 +132,12 @@ fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
         let return_data = reduce_proof(nodes[i], current_hash, new_index);
         current_hash = return_data.hashed_leaves;
         new_index = return_data.new_index_position;
-        println!("new_index {}", new_index);
+
         i += 1;
     }
     // if the roots match return true
     current_hash == nodes[nodes.len() - 1]
 }
-
 
 struct ReduceProofReturn {
     hashed_leaves: u64,
@@ -144,7 +145,7 @@ struct ReduceProofReturn {
 }
 /// takes two nodes of the tree and hashes them to create the next level of the tree
 fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: usize) -> ReduceProofReturn {
-    // the next position in the tree is the current position divided by two and rounded down but u64 handles 
+    // the next position in the tree is the current position divided by two and rounded down but u64 handles
     let new_index_position = leaf_index / 2;
     let hashed_leaves;
     // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
@@ -155,9 +156,8 @@ fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: usize) -> ReduceP
     }
     ReduceProofReturn {
         hashed_leaves,
-        new_index_position: new_index_position
+        new_index_position: new_index_position,
     }
-
 }
 /// returns data to be put in tree
 fn get_data() -> Vec<String> {
@@ -188,14 +188,14 @@ mod tests {
     fn it_hashes_values() {
         let test_data = vec!["like".into(), "this".into()];
         let hashed_test_data = first_hashing(&test_data, &0);
-        let expected_result = vec![13469705049872891777, 13421249885991295001];
+        let expected_result = vec![14766127051168428186, 2096896405943510157];
         assert_eq!(expected_result, hashed_test_data.hashed_leaves);
         assert_eq!(expected_result[1], hashed_test_data.adjacent_hash);
     }
 
     #[test]
     fn it_calculates_root() {
-        let expected_result = vec![8215901497871711904];
+        let expected_result = vec![8399560962055331074];
         let first_hashed_leaves = first_hashing(&get_data(), &0);
         let mut root = first_hashed_leaves.hashed_leaves;
         let mut adjacent_hash = first_hashed_leaves.adjacent_hash;
@@ -219,11 +219,11 @@ mod tests {
     #[test]
     fn it_calculates_correct_proof_to_true() {
         let proof = [
-            13421249885991295001,
-            9426091635773224930,
-            16995962029822891419,
-            14703833076160150437,
-            8215901497871711904,
+            2096896405943510157,
+            4853846757327170105,
+            12915908306703903221,
+            15635660685162264787,
+            8399560962055331074,
         ]
         .to_vec();
         let proof_index = 0;
@@ -234,11 +234,11 @@ mod tests {
     #[test]
     fn it_calculates_incorrect_proof_to_false_with_wrong_word() {
         let proof = [
-            13421249885991295001,
-            9426091635773224930,
-            16995962029822891419,
-            14703833076160150437,
-            8215901497871711904,
+            2096896405943510157,
+            4853846757327170105,
+            12915908306703903221,
+            15635660685162264787,
+            8399560962055331074,
         ]
         .to_vec();
         let proof_index = 0;
@@ -249,11 +249,11 @@ mod tests {
     #[test]
     fn it_calculates_incorrect_proof_to_false_with_wrong_proof() {
         let proof = [
-            13421249885991295101,
-            9426091635773224930,
-            16995962029822891419,
-            14703833076160150437,
-            8215901497871711904,
+            2096896405943510158,
+            4853846757327170105,
+            12915908306703903221,
+            15635660685162264787,
+            8399560962055331074,
         ]
         .to_vec();
         let proof_index = 0;
@@ -280,7 +280,7 @@ mod tests {
             "episode".into(),
             "one".into(),
         ];
-        let expected_result = vec![17278646585610960701];
+        let expected_result = vec![14764477793080918021];
         let first_hashed_leaves = first_hashing(&data, &0);
         let mut root = first_hashed_leaves.hashed_leaves;
         let mut adjacent_hash = first_hashed_leaves.adjacent_hash;
@@ -294,11 +294,11 @@ mod tests {
     #[test]
     fn it_calculates_correct_proof_to_with_uneven_leaves() {
         let proof = [
-            13421249885991295001,
-            9426091635773224930,
-            16995962029822891419,
-            2239737509107465412,
-            17278646585610960701,
+            2096896405943510157,
+            4853846757327170105,
+            12915908306703903221,
+            5642424714509190392,
+            14764477793080918021,
         ]
         .to_vec();
         let proof_index = 0;
