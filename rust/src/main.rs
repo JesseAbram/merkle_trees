@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 
 fn main() {
     let leaves = get_data();
-    let proof_index = 0;
+    let proof_index = 7;
     let first_hashed_leaves = first_hashing(&leaves, &proof_index);
     println!("{:?}", first_hashed_leaves.hashed_leaves);
     println!("{:?}", first_hashed_leaves.adjacent_hash);
@@ -27,18 +27,20 @@ fn main() {
     println!("I am root {:?}", root);
     println!("is proved? {:?}", is_proved);
 }
-// return type for reduce_merkle_branches function
+/// return type for reduce_merkle_branches function
 struct MerkleBranchReturn {
     row: Vec<u64>,
     adjacent_hash: u64,
 }
-// takes an array and hashes the adjacent hashes together
-// returns the adjacent hash for the proof 
-// handles uneven tree size by hashing the last node twice if needed
+/// takes an array and hashes the adjacent hashes together
+/// returns the adjacent hash for the proof
+/// handles uneven tree size by hashing the last node twice if needed
 fn reduce_merkle_branches(nodes: Vec<u64>, current_adjacent_hash: u64) -> MerkleBranchReturn {
     let mut row = Vec::with_capacity((nodes.len() + 1) / 2);
     let mut i = 0;
+    // loops through the nodes and hashes adjacent nodes returning the next layer of the tree
     while i < nodes.len() {
+        // handles uneven tree by adding the same node twice
         if nodes.len() - row.len() * 2 != 1 {
             row.push(hash_nodes(nodes[i], nodes[i + 1]));
         } else {
@@ -46,39 +48,43 @@ fn reduce_merkle_branches(nodes: Vec<u64>, current_adjacent_hash: u64) -> Merkle
         }
         i += 2;
     }
-    let adjacent_hash_index = nodes.iter().position(|&r| r == current_adjacent_hash).unwrap();
+    // for the proof, finds where the current adjacent hash is
+    let adjacent_hash_index = nodes
+        .iter()
+        .position(|&r| r == current_adjacent_hash)
+        .unwrap();
+    // divides it by two to represent the position in the next layer of the tree
     let next_index_level = adjacent_hash_index / 2;
+    // if this is the last level exists here with the root
     if row.len() < 2 {
         return MerkleBranchReturn {
             adjacent_hash: row[0],
             row,
         };
     }
+    // if the index position is even get the node to the right, odd get the node to the left
     let adjacent_hash = if next_index_level % 2 == 0 {
         row[next_index_level + 1]
     } else {
         row[next_index_level - 1]
     };
     println!("{:?}", row);
-    MerkleBranchReturn {
-        row,
-        adjacent_hash,
-    }
+    MerkleBranchReturn { row, adjacent_hash }
 }
-// hashes a left and right node together returns hash
+/// hashes a left and right node together returns hash
 fn hash_nodes(left: u64, right: u64) -> u64 {
     let mut hasher = DefaultHasher::new();
     let concat = left.wrapping_add(right);
     concat.hash(&mut hasher);
     hasher.finish()
 }
-// return type for first_hashing function
+/// return type for first_hashing function
 struct FirstHashReturn {
     hashed_leaves: Vec<u64>,
     adjacent_hash: u64,
 }
-// takes a data set of vec of strings and hashes them
-// returns the hashes of all the input data and the adjacent hash of the leaf to prove
+/// takes a data set of vec of strings and hashes them
+/// returns the hashes of all the input data and the adjacent hash of the leaf to prove
 fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
     let mut hashed_leaves = Vec::new();
     hashed_leaves = leaves
@@ -89,26 +95,27 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
             hasher.finish()
         })
         .collect();
+    // find adjacent hash, if even it is the right if odd it is the left
     let adjacent_hash = if index % 2 == 0 {
         hashed_leaves[index + 1]
     } else {
         hashed_leaves[index - 1]
     };
-    let return_data = FirstHashReturn {
+    FirstHashReturn {
         adjacent_hash,
         hashed_leaves,
-    };
-
-    return_data
+    }
 }
-// takes in proof, recreates the tree based on the proof
-// returns true if the root matches
+/// takes in proof, recreates the tree based on the proof
+/// returns true if the root matches
 fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
+    // hash the piece of data to be checked
     let mut hasher = DefaultHasher::new();
     word.hash(&mut hasher);
     let hashed_word = hasher.finish();
 
     // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
+    // hashes the first level of the tree
     let first_level = if index % 2 == 0 {
         hash_nodes(hashed_word, nodes[0])
     } else {
@@ -117,24 +124,42 @@ fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
 
     let mut i = 1;
     let mut current_hash = first_level;
+    let mut new_index = *index;
+    // hashes the next levels to get the root
     while i < nodes.len() - 1 {
-        current_hash = reduce_proof(nodes[i], current_hash, index, i);
-        // println!("current_hash {}", current_hash);
+        let return_data = reduce_proof(nodes[i], current_hash, new_index);
+        current_hash = return_data.hashed_leaves;
+        new_index = return_data.new_index_position;
+        println!("new_index {}", new_index);
         i += 1;
     }
+    // if the roots match return true
     current_hash == nodes[nodes.len() - 1]
 }
-// takes two nodes of the tree and hashes them to create the next level of the tree
-fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: &usize, i: usize) -> u64 {
-    let new_position = leaf_index / i + 2;
-    // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
-    if new_position % 2 == 0 {
-        hash_nodes(current_hash, next_hash)
-    } else {
-        hash_nodes(current_hash, next_hash)
-    }
+
+
+struct ReduceProofReturn {
+    hashed_leaves: u64,
+    new_index_position: usize,
 }
-// returns data to be put in tree
+/// takes two nodes of the tree and hashes them to create the next level of the tree
+fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: usize) -> ReduceProofReturn {
+    // the next position in the tree is the current position divided by two and rounded down but u64 handles 
+    let new_index_position = leaf_index / 2;
+    let hashed_leaves;
+    // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
+    if new_index_position % 2 == 0 {
+        hashed_leaves = hash_nodes(current_hash, next_hash);
+    } else {
+        hashed_leaves = hash_nodes(current_hash, next_hash);
+    }
+    ReduceProofReturn {
+        hashed_leaves,
+        new_index_position: new_index_position
+    }
+
+}
+/// returns data to be put in tree
 fn get_data() -> Vec<String> {
     vec![
         "like".into(),
