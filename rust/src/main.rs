@@ -17,7 +17,7 @@ fn main() {
         adjacent_hash = return_data.adjacent_hash;
         proof.push(return_data.adjacent_hash)
     }
-    // TODO put full proof into struct
+
     let is_proved = check_proof(&proof, &proof_index, &leaves[proof_index]);
 
     println!("proof {:?}, leaf_index {}, my_word {}", &proof, &proof_index, leaves[proof_index]);
@@ -121,18 +121,6 @@ fn hash_function(data: u64) -> u64 {
     hasher.finish()
 }
 
-// fn power_of_2_check(length: usize) {
-
-//  if length == 0 {
-//     panic!("hey wait no stop");
-//  }
-
-//  let is_power_of_2 = (length & (length - 1)) == 0;
-//     match is_power_of_2 {
-//         true => (),
-//         false => panic!("hey wait no stop")
-//     }
-// }
 fn get_data() ->  Vec<String> {
     vec!["like".into(), "this".into(), "that".into(), "and".into(), "this".into(), "and".into(), "that".into(), "so".into(), "just".into(), "chill".into(), "till".into(), "the".into(), "next".into(), "episode".into(), "one".into(), "two".into()]
 }
@@ -141,20 +129,7 @@ fn get_data() ->  Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // #[test]
-    // #[should_panic(expected = "hey wait no stop")]
-    // fn it_fails_not_power_of_two() {
-    //     power_of_2_check(15);
-    // }
-    // #[test]
-    // #[should_panic(expected = "hey wait no stop")]
-    // fn it_fails_if_0() {
-    //     power_of_2_check(0);
-    // }
-    // #[test]
-    // fn it_passes_power_of_two() {
-    //     power_of_2_check(16);
-    // }
+   
     #[test]
     fn it_hashes_values() {
         let test_data = vec!["like".into(), "this".into()];
