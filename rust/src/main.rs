@@ -6,11 +6,11 @@ fn main() {
     let proof_index = 0;
     let first_hashed_leaves = first_hashing(&leaves, &proof_index);
     println!("{:?}", first_hashed_leaves.hashed_leaves);
-    println!("{:?}", first_hashed_leaves.sister_hash);
+    println!("{:?}", first_hashed_leaves.adjacent_hash);
     let mut root = first_hashed_leaves.hashed_leaves.clone();
     let mut proof = Vec::new();
-    proof.push(first_hashed_leaves.sister_hash);
-    let mut adjacent_hash = first_hashed_leaves.sister_hash;
+    proof.push(first_hashed_leaves.adjacent_hash);
+    let mut adjacent_hash = first_hashed_leaves.adjacent_hash;
     while root.len() > 1 {
         let return_data = reduce_merkle_branches(root, adjacent_hash);
         root = return_data.row;
@@ -27,13 +27,15 @@ fn main() {
     println!("I am root {:?}", root);
     println!("is proved? {:?}", is_proved);
 }
-
+// return type for reduce_merkle_branches function
 struct MerkleBranchReturn {
     row: Vec<u64>,
     adjacent_hash: u64,
 }
-
-fn reduce_merkle_branches(nodes: Vec<u64>, adjacent_hash: u64) -> MerkleBranchReturn {
+// takes an array and hashes the adjacent hashes together
+// returns the adjacent hash for the proof 
+// handles uneven tree size by hashing the last node twice if needed
+fn reduce_merkle_branches(nodes: Vec<u64>, current_adjacent_hash: u64) -> MerkleBranchReturn {
     let mut row = Vec::with_capacity((nodes.len() + 1) / 2);
     let mut i = 0;
     while i < nodes.len() {
@@ -44,7 +46,7 @@ fn reduce_merkle_branches(nodes: Vec<u64>, adjacent_hash: u64) -> MerkleBranchRe
         }
         i += 2;
     }
-    let adjacent_hash_index = nodes.iter().position(|&r| r == adjacent_hash).unwrap();
+    let adjacent_hash_index = nodes.iter().position(|&r| r == current_adjacent_hash).unwrap();
     let next_index_level = adjacent_hash_index / 2;
     if row.len() < 2 {
         return MerkleBranchReturn {
@@ -52,7 +54,7 @@ fn reduce_merkle_branches(nodes: Vec<u64>, adjacent_hash: u64) -> MerkleBranchRe
             row,
         };
     }
-    let sister_hash = if next_index_level % 2 == 0 {
+    let adjacent_hash = if next_index_level % 2 == 0 {
         row[next_index_level + 1]
     } else {
         row[next_index_level - 1]
@@ -60,20 +62,23 @@ fn reduce_merkle_branches(nodes: Vec<u64>, adjacent_hash: u64) -> MerkleBranchRe
     println!("{:?}", row);
     MerkleBranchReturn {
         row,
-        adjacent_hash: sister_hash,
+        adjacent_hash,
     }
 }
-
+// hashes a left and right node together returns hash
 fn hash_nodes(left: u64, right: u64) -> u64 {
     let mut hasher = DefaultHasher::new();
     let concat = left.wrapping_add(right);
     concat.hash(&mut hasher);
     hasher.finish()
 }
+// return type for first_hashing function
 struct FirstHashReturn {
     hashed_leaves: Vec<u64>,
-    sister_hash: u64,
+    adjacent_hash: u64,
 }
+// takes a data set of vec of strings and hashes them
+// returns the hashes of all the input data and the adjacent hash of the leaf to prove
 fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
     let mut hashed_leaves = Vec::new();
     hashed_leaves = leaves
@@ -84,19 +89,20 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
             hasher.finish()
         })
         .collect();
-    let sister_hash = if index % 2 == 0 {
+    let adjacent_hash = if index % 2 == 0 {
         hashed_leaves[index + 1]
     } else {
         hashed_leaves[index - 1]
     };
     let return_data = FirstHashReturn {
-        sister_hash,
+        adjacent_hash,
         hashed_leaves,
     };
 
     return_data
 }
-
+// takes in proof, recreates the tree based on the proof
+// returns true if the root matches
 fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
     let mut hasher = DefaultHasher::new();
     word.hash(&mut hasher);
@@ -104,9 +110,9 @@ fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
 
     // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
     let first_level = if index % 2 == 0 {
-        hash_function(hashed_word.wrapping_add(nodes[0]))
+        hash_nodes(hashed_word, nodes[0])
     } else {
-        hash_function(nodes[0].wrapping_add(hashed_word))
+        hash_nodes(nodes[0], hashed_word)
     };
 
     let mut i = 1;
@@ -118,23 +124,17 @@ fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
     }
     current_hash == nodes[nodes.len() - 1]
 }
-
+// takes two nodes of the tree and hashes them to create the next level of the tree
 fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: &usize, i: usize) -> u64 {
     let new_position = leaf_index / i + 2;
     // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
     if new_position % 2 == 0 {
-        hash_function(current_hash.wrapping_add(next_hash))
+        hash_nodes(current_hash, next_hash)
     } else {
-        hash_function(next_hash.wrapping_add(current_hash))
+        hash_nodes(current_hash, next_hash)
     }
 }
-
-fn hash_function(data: u64) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    data.hash(&mut hasher);
-    hasher.finish()
-}
-
+// returns data to be put in tree
 fn get_data() -> Vec<String> {
     vec![
         "like".into(),
@@ -165,7 +165,7 @@ mod tests {
         let hashed_test_data = first_hashing(&test_data, &0);
         let expected_result = vec![13469705049872891777, 13421249885991295001];
         assert_eq!(expected_result, hashed_test_data.hashed_leaves);
-        assert_eq!(expected_result[1], hashed_test_data.sister_hash);
+        assert_eq!(expected_result[1], hashed_test_data.adjacent_hash);
     }
 
     #[test]
@@ -173,7 +173,7 @@ mod tests {
         let expected_result = vec![8215901497871711904];
         let first_hashed_leaves = first_hashing(&get_data(), &0);
         let mut root = first_hashed_leaves.hashed_leaves;
-        let mut adjacent_hash = first_hashed_leaves.sister_hash;
+        let mut adjacent_hash = first_hashed_leaves.adjacent_hash;
         while root.len() > 1 {
             let return_data = reduce_merkle_branches(root, adjacent_hash);
             root = return_data.row;
@@ -258,7 +258,7 @@ mod tests {
         let expected_result = vec![17278646585610960701];
         let first_hashed_leaves = first_hashing(&data, &0);
         let mut root = first_hashed_leaves.hashed_leaves;
-        let mut adjacent_hash = first_hashed_leaves.sister_hash;
+        let mut adjacent_hash = first_hashed_leaves.adjacent_hash;
         while root.len() > 1 {
             let return_data = reduce_merkle_branches(root, adjacent_hash);
             root = return_data.row;
