@@ -1,12 +1,12 @@
 use hex::encode;
 use sha3::{Digest, Sha3_256};
-use std;
 
 fn main() {
+    // data to be used as leaves
     let leaves = get_data();
+    // Input the index of the word you want to create the proof for
     let proof_index = 0;
     let first_hashed_leaves = first_hashing(&leaves, &proof_index);
-    println!("first hash leafs {:?}", first_hashed_leaves.hashed_leaves);
     let mut root = first_hashed_leaves.hashed_leaves.clone();
     let mut proof = Vec::new();
     proof.push(first_hashed_leaves.adjacent_hash.clone());
@@ -15,7 +15,6 @@ fn main() {
         let return_data = reduce_merkle_branches(root, adjacent_hash);
         root = return_data.row;
         adjacent_hash = return_data.adjacent_hash.clone();
-        println!("next level {:?}", root);
         proof.push(return_data.adjacent_hash)
     }
 
@@ -86,10 +85,9 @@ struct FirstHashReturn {
 /// takes a data set of vec of strings and hashes them
 /// returns the hashes of all the input data and the adjacent hash of the leaf to prove
 fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
-    let mut hashed_leaves = Vec::new();
     let mut i = 0;
     // hashes all the leaves, appends an index to force unique hash (almost like a nonce)
-    hashed_leaves = leaves
+    let hashed_leaves: Vec<String> = leaves
         .iter()
         .map(|x| {
             let unique_word = x.clone() + (&i.to_string());
