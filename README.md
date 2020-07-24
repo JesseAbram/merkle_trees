@@ -13,3 +13,5 @@ So far this has been implemented in javascript and rust, with the rust one being
 * navigate to /rust
 * ``` cargo run ``` to run
 * ``` cargo test ``` to test
+
+* I used sha3 library for the hashing and as well as hex library for help encoding the array buffer returns from the sha3 function
