@@ -1,12 +1,12 @@
+use hex::encode;
 use sha3::{Digest, Sha3_256};
 use std;
-use hex::encode;
-
 
 fn main() {
     let leaves = get_data();
     let proof_index = 0;
     let first_hashed_leaves = first_hashing(&leaves, &proof_index);
+    println!("first hash leafs {:?}", first_hashed_leaves.hashed_leaves);
     let mut root = first_hashed_leaves.hashed_leaves.clone();
     let mut proof = Vec::new();
     proof.push(first_hashed_leaves.adjacent_hash.clone());
@@ -15,6 +15,7 @@ fn main() {
         let return_data = reduce_merkle_branches(root, adjacent_hash);
         root = return_data.row;
         adjacent_hash = return_data.adjacent_hash.clone();
+        println!("next level {:?}", root);
         proof.push(return_data.adjacent_hash)
     }
 
@@ -26,7 +27,6 @@ fn main() {
     );
     println!("I am root {:?}", root);
     println!("is proved? {:?}", is_proved);
-
 }
 /// return type for reduce_merkle_branches function
 struct MerkleBranchReturn {
@@ -180,7 +180,7 @@ fn get_data() -> Vec<String> {
         "next".into(),
         "episode".into(),
         "one".into(),
-        "two".into(),
+        "two".into()
     ]
 }
 
@@ -191,14 +191,18 @@ mod tests {
     fn it_hashes_values() {
         let test_data = vec!["like".into(), "this".into()];
         let hashed_test_data = first_hashing(&test_data, &0);
-        let expected_result = vec![14766127051168428186, 2096896405943510157];
+        let expected_result = vec![
+            "1bd79bdf98d0505586d38900bca78f0455da9580e95bf86933e7854ef1cf7eeb",
+            "003285cad89f49174a3ecba65402ab49bb72e220047ccdee8bec9ea6fd28312c",
+        ];
         assert_eq!(expected_result, hashed_test_data.hashed_leaves);
         assert_eq!(expected_result[1], hashed_test_data.adjacent_hash);
     }
 
     #[test]
     fn it_calculates_root() {
-        let expected_result = vec![8399560962055331074];
+        let expected_result =
+            vec!["922ba1684fd93c2fd24d0f79ddb90acc562e3da0df555eb89ad85ef595b1cb5c"];
         let first_hashed_leaves = first_hashing(&get_data(), &0);
         let mut root = first_hashed_leaves.hashed_leaves;
         let mut adjacent_hash = first_hashed_leaves.adjacent_hash;
@@ -212,23 +216,23 @@ mod tests {
 
     #[test]
     fn it_hashes_nodes_correctly() {
-        let expected_result = 11396221907974800208;
-        let left = 13469705049872891777;
-        let right = 13421249885991295001;
+        let expected_result =
+            "0f133f89141a9e62f8324dafa8d822501236c92db4793438a9ea2ebf6919dd2b".to_string();
+        let left = "1bd79bdf98d0505586d38900bca78f0455da9580e95bf86933e7854ef1cf7eeb".to_string();
+        let right = "003285cad89f49174a3ecba65402ab49bb72e220047ccdee8bec9ea6fd28312c".to_string();
         let hashed_node = hash_nodes(left, right);
         assert_eq!(hashed_node, expected_result);
     }
 
     #[test]
     fn it_calculates_correct_proof_to_true() {
-        let proof = [
-            2096896405943510157,
-            4853846757327170105,
-            12915908306703903221,
-            15635660685162264787,
-            8399560962055331074,
-        ]
-        .to_vec();
+        let proof = vec![
+            "003285cad89f49174a3ecba65402ab49bb72e220047ccdee8bec9ea6fd28312c".to_string(),
+            "2d2371e7f09b3451518e88df1c75aba5658cf606d3b9e4abf5f0a2d29c710434".to_string(),
+            "1e37af00d38cd7217c5a2ecc8df9c8239e6b784021ee22d5f40057039d51c1af".to_string(),
+            "e29d44c47b8dd9dfd26abb828410b43fe2bc920181657cf1598e3a9a72cce8ca".to_string(),
+            "922ba1684fd93c2fd24d0f79ddb90acc562e3da0df555eb89ad85ef595b1cb5c".to_string(),
+        ];
         let proof_index = 0;
         let my_word = "like".to_string();
         let is_correct = check_proof(&proof, &proof_index, &my_word);
@@ -236,14 +240,13 @@ mod tests {
     }
     #[test]
     fn it_calculates_incorrect_proof_to_false_with_wrong_word() {
-        let proof = [
-            2096896405943510157,
-            4853846757327170105,
-            12915908306703903221,
-            15635660685162264787,
-            8399560962055331074,
-        ]
-        .to_vec();
+        let proof = vec![
+            "003285cad89f49174a3ecba65402ab49bb72e220047ccdee8bec9ea6fd28312c".to_string(),
+            "2d2371e7f09b3451518e88df1c75aba5658cf606d3b9e4abf5f0a2d29c710434".to_string(),
+            "1e37af00d38cd7217c5a2ecc8df9c8239e6b784021ee22d5f40057039d51c1af".to_string(),
+            "e29d44c47b8dd9dfd26abb828410b43fe2bc920181657cf1598e3a9a72cce8ca".to_string(),
+            "922ba1684fd93c2fd24d0f79ddb90acc562e3da0df555eb89ad85ef595b1cb5c".to_string(),
+        ];
         let proof_index = 0;
         let my_word = "this".to_string();
         let is_correct = check_proof(&proof, &proof_index, &my_word);
@@ -251,14 +254,13 @@ mod tests {
     }
     #[test]
     fn it_calculates_incorrect_proof_to_false_with_wrong_proof() {
-        let proof = [
-            2096896405943510158,
-            4853846757327170105,
-            12915908306703903221,
-            15635660685162264787,
-            8399560962055331074,
-        ]
-        .to_vec();
+        let proof = vec![
+            "003285cad89f49174a3ecba65402ab49bb72e220047ccdee8bec9ea6fd28312a".to_string(),
+            "2d2371e7f09b3451518e88df1c75aba5658cf606d3b9e4abf5f0a2d29c710434".to_string(),
+            "1e37af00d38cd7217c5a2ecc8df9c8239e6b784021ee22d5f40057039d51c1af".to_string(),
+            "e29d44c47b8dd9dfd26abb828410b43fe2bc920181657cf1598e3a9a72cce8ca".to_string(),
+            "922ba1684fd93c2fd24d0f79ddb90acc562e3da0df555eb89ad85ef595b1cb5c".to_string(),
+        ];
         let proof_index = 0;
         let my_word = "like".to_string();
         let is_correct = check_proof(&proof, &proof_index, &my_word);
@@ -283,7 +285,7 @@ mod tests {
             "episode".into(),
             "one".into(),
         ];
-        let expected_result = vec![14764477793080918021];
+        let expected_result = vec!["dfbf4654354900cd2580068b8baaf10e3a78ba7fff3e594eeef71ff34435c1f6"];
         let first_hashed_leaves = first_hashing(&data, &0);
         let mut root = first_hashed_leaves.hashed_leaves;
         let mut adjacent_hash = first_hashed_leaves.adjacent_hash;
@@ -296,14 +298,13 @@ mod tests {
     }
     #[test]
     fn it_calculates_correct_proof_to_with_uneven_leaves() {
-        let proof = [
-            2096896405943510157,
-            4853846757327170105,
-            12915908306703903221,
-            5642424714509190392,
-            14764477793080918021,
-        ]
-        .to_vec();
+        let proof = vec![
+            "003285cad89f49174a3ecba65402ab49bb72e220047ccdee8bec9ea6fd28312c".to_string(),
+            "2d2371e7f09b3451518e88df1c75aba5658cf606d3b9e4abf5f0a2d29c710434".to_string(),
+            "1e37af00d38cd7217c5a2ecc8df9c8239e6b784021ee22d5f40057039d51c1af".to_string(),
+            "1c5509df07dd8f74c9bfb46d7500b3b89f381c3197ce88bbf5bfae1bf795e919".to_string(),
+            "dfbf4654354900cd2580068b8baaf10e3a78ba7fff3e594eeef71ff34435c1f6".to_string(),
+        ];
         let proof_index = 0;
         let my_word = "like".to_string();
         let is_correct = check_proof(&proof, &proof_index, &my_word);
