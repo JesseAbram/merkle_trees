@@ -117,7 +117,7 @@ fn check_proof(nodes: &Vec<String>, index: &usize, word: &String) -> bool {
     hasher.update(unique_word);
     let hashed_word = encode(hasher.finalize());
 
-    // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
+    // determines based on position in tree if node is on the left or right
     // hashes the first level of the tree
     let first_level = if index % 2 == 0 {
         hash_nodes(hashed_word, nodes[0].clone())
@@ -149,7 +149,7 @@ fn reduce_proof(next_hash: String, current_hash: String, leaf_index: usize) -> R
     // the next position in the tree is the current position divided by two and rounded down but u64 handles
     let new_index_position = leaf_index / 2;
     let hashed_leaves;
-    // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
+    // determines based on position in tree if node is on the left or right
     if new_index_position % 2 == 0 {
         hashed_leaves = hash_nodes(current_hash, next_hash);
     } else {
