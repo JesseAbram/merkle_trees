@@ -1,5 +1,7 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+use sha3::{Digest, Sha3_256};
+use std;
+use hex::encode;
+
 
 fn main() {
     let leaves = get_data();
@@ -7,12 +9,12 @@ fn main() {
     let first_hashed_leaves = first_hashing(&leaves, &proof_index);
     let mut root = first_hashed_leaves.hashed_leaves.clone();
     let mut proof = Vec::new();
-    proof.push(first_hashed_leaves.adjacent_hash);
+    proof.push(first_hashed_leaves.adjacent_hash.clone());
     let mut adjacent_hash = first_hashed_leaves.adjacent_hash;
     while root.len() > 1 {
         let return_data = reduce_merkle_branches(root, adjacent_hash);
         root = return_data.row;
-        adjacent_hash = return_data.adjacent_hash;
+        adjacent_hash = return_data.adjacent_hash.clone();
         proof.push(return_data.adjacent_hash)
     }
 
@@ -24,61 +26,62 @@ fn main() {
     );
     println!("I am root {:?}", root);
     println!("is proved? {:?}", is_proved);
+
 }
 /// return type for reduce_merkle_branches function
 struct MerkleBranchReturn {
-    row: Vec<u64>,
-    adjacent_hash: u64,
+    row: Vec<String>,
+    adjacent_hash: String,
 }
 /// takes an array and hashes the adjacent hashes together
 /// returns the adjacent hash for the proof
 /// handles uneven tree size by hashing the last node twice if needed
-fn reduce_merkle_branches(nodes: Vec<u64>, current_adjacent_hash: u64) -> MerkleBranchReturn {
+fn reduce_merkle_branches(nodes: Vec<String>, current_adjacent_hash: String) -> MerkleBranchReturn {
     let mut row = Vec::with_capacity((nodes.len() + 1) / 2);
     let mut i = 0;
     // loops through the nodes and hashes adjacent nodes returning the next layer of the tree
     while i < nodes.len() {
         // handles uneven tree by adding the same node twice
         if nodes.len() - row.len() * 2 != 1 {
-            row.push(hash_nodes(nodes[i], nodes[i + 1]));
+            row.push(hash_nodes(nodes[i].clone(), nodes[i + 1].clone()));
         } else {
-            row.push(hash_nodes(nodes[i], nodes[i]));
+            row.push(hash_nodes(nodes[i].clone(), nodes[i].clone()));
         }
         i += 2;
     }
     // for the proof, finds where the current adjacent hash is
     let adjacent_hash_index = nodes
         .iter()
-        .position(|&r| r == current_adjacent_hash)
+        .position(|r| r == &current_adjacent_hash)
         .unwrap();
     // divides it by two to represent the position in the next layer of the tree
     let next_index_level = adjacent_hash_index / 2;
     // if this is the last level exists here with the root
     if row.len() < 2 {
         return MerkleBranchReturn {
-            adjacent_hash: row[0],
+            adjacent_hash: row[0].clone(),
             row,
         };
     }
     // if the index position is even get the node to the right, odd get the node to the left
     let adjacent_hash = if next_index_level % 2 == 0 {
-        row[next_index_level + 1]
+        row[next_index_level + 1].clone()
     } else {
-        row[next_index_level - 1]
+        row[next_index_level - 1].clone()
     };
     MerkleBranchReturn { row, adjacent_hash }
 }
 /// hashes a left and right node together returns hash
-fn hash_nodes(left: u64, right: u64) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    let concat = left.wrapping_add(right);
-    concat.hash(&mut hasher);
-    hasher.finish()
+fn hash_nodes(left: String, right: String) -> String {
+    let mut hasher = Sha3_256::new();
+    let concat = left + &right;
+    hasher.update(concat);
+    encode(hasher.finalize())
 }
 /// return type for first_hashing function
 struct FirstHashReturn {
-    hashed_leaves: Vec<u64>,
-    adjacent_hash: u64,
+    hashed_leaves: Vec<String>,
+    adjacent_hash: String,
 }
 /// takes a data set of vec of strings and hashes them
 /// returns the hashes of all the input data and the adjacent hash of the leaf to prove
@@ -90,17 +93,17 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
         .iter()
         .map(|x| {
             let unique_word = x.clone() + (&i.to_string());
-            let mut hasher = DefaultHasher::new();
-            unique_word.hash(&mut hasher);
+            let mut hasher = Sha3_256::new();
+            hasher.update(unique_word);
             i += 1;
-            hasher.finish()
+            encode(hasher.finalize())
         })
         .collect();
     // find adjacent hash, if even it is the right if odd it is the left
     let adjacent_hash = if index % 2 == 0 {
-        hashed_leaves[index + 1]
+        hashed_leaves[index + 1].clone()
     } else {
-        hashed_leaves[index - 1]
+        hashed_leaves[index - 1].clone()
     };
     FirstHashReturn {
         adjacent_hash,
@@ -109,19 +112,19 @@ fn first_hashing(leaves: &Vec<String>, index: &usize) -> FirstHashReturn {
 }
 /// takes in proof, recreates the tree based on the proof
 /// returns true if the root matches
-fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
+fn check_proof(nodes: &Vec<String>, index: &usize, word: &String) -> bool {
     // hash the piece of data to be checked
-    let mut hasher = DefaultHasher::new();
+    let mut hasher = Sha3_256::new();
     let unique_word = word.clone() + &index.to_string();
-    unique_word.hash(&mut hasher);
-    let hashed_word = hasher.finish();
+    hasher.update(unique_word);
+    let hashed_word = encode(hasher.finalize());
 
     // this does not matter with u64 as adding two numbers together yields same result, however will work when/if switch hash functions
     // hashes the first level of the tree
     let first_level = if index % 2 == 0 {
-        hash_nodes(hashed_word, nodes[0])
+        hash_nodes(hashed_word, nodes[0].clone())
     } else {
-        hash_nodes(nodes[0], hashed_word)
+        hash_nodes(nodes[0].clone(), hashed_word)
     };
 
     let mut i = 1;
@@ -129,7 +132,7 @@ fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
     let mut new_index = *index;
     // hashes the next levels to get the root
     while i < nodes.len() - 1 {
-        let return_data = reduce_proof(nodes[i], current_hash, new_index);
+        let return_data = reduce_proof(nodes[i].clone(), current_hash, new_index);
         current_hash = return_data.hashed_leaves;
         new_index = return_data.new_index_position;
 
@@ -140,11 +143,11 @@ fn check_proof(nodes: &Vec<u64>, index: &usize, word: &String) -> bool {
 }
 
 struct ReduceProofReturn {
-    hashed_leaves: u64,
+    hashed_leaves: String,
     new_index_position: usize,
 }
 /// takes two nodes of the tree and hashes them to create the next level of the tree
-fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: usize) -> ReduceProofReturn {
+fn reduce_proof(next_hash: String, current_hash: String, leaf_index: usize) -> ReduceProofReturn {
     // the next position in the tree is the current position divided by two and rounded down but u64 handles
     let new_index_position = leaf_index / 2;
     let hashed_leaves;
@@ -152,7 +155,7 @@ fn reduce_proof(next_hash: u64, current_hash: u64, leaf_index: usize) -> ReduceP
     if new_index_position % 2 == 0 {
         hashed_leaves = hash_nodes(current_hash, next_hash);
     } else {
-        hashed_leaves = hash_nodes(current_hash, next_hash);
+        hashed_leaves = hash_nodes(next_hash, current_hash);
     }
     ReduceProofReturn {
         hashed_leaves,
